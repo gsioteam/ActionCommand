@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://addons/action_command/lib/command_manager.tscn" type="PackedScene" id=1]
+[ext_resource path="res://addons/action_command/lib/action.tscn" type="PackedScene" id=2]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="CommandManager" parent="." instance=ExtResource( 1 )]
+
+[node name="Command" parent="CommandManager" instance=ExtResource( 2 )]
