@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=14 format=2]
 
 [ext_resource path="res://addons/action_command/lib/command_manager.gd" type="Script" id=1]
-[ext_resource path="res://addons/action_command/demo/key.gd" type="Script" id=2]
+[ext_resource path="res://addons/action_command/lib/command_resource.gd" type="Script" id=2]
 [ext_resource path="res://addons/action_command/demo/arrow.png" type="Texture" id=3]
 [ext_resource path="res://addons/action_command/demo/button.png" type="Texture" id=4]
 [ext_resource path="res://addons/action_command/demo/check.png" type="Texture" id=5]
+[ext_resource path="res://addons/action_command/lib/key.gd" type="Script" id=7]
 
 [sub_resource type="GDScript" id=1]
 script/source = "extends Node2D
@@ -12,55 +13,24 @@ script/source = "extends Node2D
 var _action1
 
 func _ready():
-	_action1 = $command.parse_command(\"down&!right:30,down&right,!down&right,action<:5\")
+	_action1 = $command.parse_command(\"236,a<:5\")
 
+var _old_direction = 5
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	var command = $command
 	command.tick()
 	
-	if command.is_press(\"right\") and command.is_press(\"down\"):
-		$joystick/rightdown.modulate = Color.red
-	else:
-		$joystick/rightdown.modulate = Color.white
-		
-	if command.is_press(\"down\") and command.is_press(\"left\"):
-		$joystick/downleft.modulate = Color.red
-	else:
-		$joystick/downleft.modulate = Color.white
-		
-	if command.is_press(\"left\") and command.is_press(\"up\"):
-		$joystick/leftup.modulate = Color.red
-	else:
-		$joystick/leftup.modulate = Color.white
-		
-	if command.is_press(\"up\") and command.is_press(\"right\"):
-		$joystick/upright.modulate = Color.red
-	else:
-		$joystick/upright.modulate = Color.white
+	var joystick = $joystick
+	var dir = command.get_direction()
+	if dir != _old_direction:
+		if _old_direction != 5:
+			joystick.get_node(str(_old_direction)).modulate = Color.white
+		_old_direction = dir
+		if dir != 5:
+			joystick.get_node(str(dir)).modulate = Color.red
 	
-	if $joystick/rightdown.modulate == Color.white and $joystick/upright.modulate == Color.white and command.is_press(\"right\"):
-		$joystick/right.modulate = Color.red
-	else:
-		$joystick/right.modulate = Color.white
-	
-	if $joystick/leftup.modulate == Color.white and $joystick/downleft.modulate == Color.white and command.is_press(\"left\"):
-		$joystick/left.modulate = Color.red
-	else:
-		$joystick/left.modulate = Color.white
-	
-	if $joystick/upright.modulate == Color.white and $joystick/leftup.modulate == Color.white and command.is_press(\"up\"):
-		$joystick/up.modulate = Color.red
-	else:
-		$joystick/up.modulate = Color.white
-	
-	if $joystick/downleft.modulate == Color.white and $joystick/rightdown.modulate == Color.white and command.is_press(\"down\"):
-		$joystick/down.modulate = Color.red
-	else:
-		$joystick/down.modulate = Color.white
-	
-	if command.is_press(\"action\"):
+	if command.is_press(\"a\"):
 		$joystick/a.modulate = Color.red
 	else:
 		$joystick/a.modulate = Color.white
@@ -77,76 +47,90 @@ func _display_checkmark(checkmark: Sprite):
 	
 "
 
+[sub_resource type="Resource" id=3]
+script = ExtResource( 7 )
+action_name = "a"
+scancode = 74
+
+[sub_resource type="Resource" id=4]
+script = ExtResource( 7 )
+action_name = "2"
+scancode = 83
+
+[sub_resource type="Resource" id=5]
+script = ExtResource( 7 )
+action_name = "4"
+scancode = 65
+
+[sub_resource type="Resource" id=6]
+script = ExtResource( 7 )
+action_name = "6"
+scancode = 68
+
+[sub_resource type="Resource" id=7]
+script = ExtResource( 7 )
+action_name = "8"
+scancode = 87
+
+[sub_resource type="Resource" id=2]
+script = ExtResource( 2 )
+direction2 = SubResource( 4 )
+direction4 = SubResource( 5 )
+direction6 = SubResource( 6 )
+direction8 = SubResource( 7 )
+buttons = [ SubResource( 3 ) ]
+
 [node name="Node2D" type="Node2D"]
 script = SubResource( 1 )
 
 [node name="command" type="Node" parent="."]
 script = ExtResource( 1 )
-
-[node name="up" type="Node" parent="command"]
-script = ExtResource( 2 )
-scancode = 16777232
-
-[node name="down" type="Node" parent="command"]
-script = ExtResource( 2 )
-scancode = 16777234
-
-[node name="left" type="Node" parent="command"]
-script = ExtResource( 2 )
-scancode = 16777231
-
-[node name="right" type="Node" parent="command"]
-script = ExtResource( 2 )
-scancode = 16777233
-
-[node name="action" type="Node" parent="command"]
-script = ExtResource( 2 )
-scancode = 32
+resource = SubResource( 2 )
 
 [node name="joystick" type="Node2D" parent="."]
 
-[node name="right" type="Sprite" parent="joystick"]
-position = Vector2( 252, 148 )
-scale = Vector2( 0.477778, 0.477778 )
-texture = ExtResource( 3 )
-
-[node name="rightdown" type="Sprite" parent="joystick"]
-position = Vector2( 242, 177 )
-rotation = 0.785398
-scale = Vector2( 0.477778, 0.477778 )
-texture = ExtResource( 3 )
-
-[node name="down" type="Sprite" parent="joystick"]
-position = Vector2( 211, 186 )
-rotation = 1.5708
-scale = Vector2( 0.477778, 0.477778 )
-texture = ExtResource( 3 )
-
-[node name="downleft" type="Sprite" parent="joystick"]
+[node name="1" type="Sprite" parent="joystick"]
 position = Vector2( 180, 177 )
 rotation = 2.35619
 scale = Vector2( 0.477778, 0.477778 )
 texture = ExtResource( 3 )
 
-[node name="left" type="Sprite" parent="joystick"]
+[node name="2" type="Sprite" parent="joystick"]
+position = Vector2( 211, 186 )
+rotation = 1.5708
+scale = Vector2( 0.477778, 0.477778 )
+texture = ExtResource( 3 )
+
+[node name="3" type="Sprite" parent="joystick"]
+position = Vector2( 242, 177 )
+rotation = 0.785398
+scale = Vector2( 0.477778, 0.477778 )
+texture = ExtResource( 3 )
+
+[node name="4" type="Sprite" parent="joystick"]
 position = Vector2( 169, 147 )
 rotation = -3.14159
 scale = Vector2( 0.477778, 0.477778 )
 texture = ExtResource( 3 )
 
-[node name="leftup" type="Sprite" parent="joystick"]
+[node name="6" type="Sprite" parent="joystick"]
+position = Vector2( 252, 148 )
+scale = Vector2( 0.477778, 0.477778 )
+texture = ExtResource( 3 )
+
+[node name="7" type="Sprite" parent="joystick"]
 position = Vector2( 180, 115 )
 rotation = -2.35619
 scale = Vector2( 0.477778, 0.477778 )
 texture = ExtResource( 3 )
 
-[node name="up" type="Sprite" parent="joystick"]
+[node name="8" type="Sprite" parent="joystick"]
 position = Vector2( 213, 104 )
 rotation = -1.5708
 scale = Vector2( 0.477778, 0.477778 )
 texture = ExtResource( 3 )
 
-[node name="upright" type="Sprite" parent="joystick"]
+[node name="9" type="Sprite" parent="joystick"]
 position = Vector2( 245, 115 )
 rotation = -0.785398
 scale = Vector2( 0.477778, 0.477778 )

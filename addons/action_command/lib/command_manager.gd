@@ -1,9 +1,19 @@
 extends Node
+
+class_name CommandManager
+
 var Action = preload("res://addons/action_command/lib/action.gd")
+const CommandResource = preload("command_resource.gd")
+
+const Status = preload("status.gd")
+const TestResult = Status.TestResult
+const ActionStatus = Status.ActionStatus
 	
 export(int) var max_cache_frame = 30
-	
-var _actions = []
+
+export (Resource) var resource = CommandResource.new()
+
+var _controller: CommandResource.Controller
 var _actives: Array = []
 var _silents: Array = []
 var _frames: Array = []
@@ -24,7 +34,8 @@ class ActionData:
 class MatchResult:
 	enum UseType {
 		All,
-		Last
+		Last,
+		Press
 	}
 	var frame_data: Array
 	
@@ -38,6 +49,11 @@ class MatchResult:
 			var last = frame_data[frame_data.size() - 1]
 			for data in last:
 				data.used = true
+		elif UseType.Press:
+			for frame in frame_data:
+				for data in frame:
+					if data.state == ActionState.Press:
+						data.used = true
 		else:
 			for frame in frame_data:
 				for data in frame:
@@ -85,38 +101,34 @@ func tick():
 	
 	_current_frame = new_frame
 
-
 func _input(event):
-	var to_active
-	var to_silent
-	for action in _actives:
-		if action.test(event) == Action.TestResult.Silent:
-			to_silent = action
-			break
+	var data = _controller.test(event)
 	
-	if to_silent == null:
-		for action in _silents:
-			if action.test(event) == Action.TestResult.Active:
-				to_active = action
-				break
-	
-	if to_active != null:
-		_actives.append(to_active)
-		_silents.erase(to_active)
-		_current_frame.append(_action_data(to_active.name, ActionState.Press))
-	elif to_silent != null:
-		_actives.erase(to_silent)
-		_silents.append(to_silent)
-		_current_frame.append(_action_data(to_silent.name, ActionState.Release))
+	for action in data.add:
+		_actives.append(action)
+		_silents.erase(action)
+		_current_frame.append(_action_data(action.action_name, ActionState.Press))
+	for action in data.remove:
+		_actives.erase(action)
+		_silents.append(action)
+		_current_frame.append(_action_data(action.action_name, ActionState.Release))
+
 
 func refresh():
-	_actions.clear()
+	if resource == null:
+		resource = CommandResource.new()
+	_controller = resource.get_controller()
 	_actives.clear()
 	_silents.clear()
-	for child in get_children():
-		if child is Action:
-			_actions.append(child)
-			_silents.append(child)
+	var will_remove = []
+	for child in _controller.actions:
+		if child is CommandResource.Action:
+			if child.status == ActionStatus.Released:
+				_silents.append(child)
+			else:
+				_actives.append(child)
+		else:
+			will_remove.append(child)
 
 func is_down(action: String, in_frame:int = 1) -> bool:
 	for i in range(0, in_frame - 1):
@@ -157,33 +169,46 @@ class CommandMatcher:
 		var regex = RegEx.new()
 		regex.compile("^(\\!?)(\\w+)([<\\->]*)$")
 		var result = regex.search(command)
-		var str1:String = result.strings[1]
-		whether = str1.empty()
-		name = result.strings[2]
-		var str2:String = result.strings[3]
-		if str2.length() > 0:
-			state_mask = 0
-			if str2.find('<') >= 0:
-				state_mask |= ActionState.Press
-			if str2.find('-') >= 0:
-				state_mask |= ActionState.Hold
-			if str2.find('>') >= 0:
-				state_mask |= ActionState.Release
-		else:
-			state_mask = ActionState.Press | ActionState.Hold
+		if result != null:
+			var str1:String = result.strings[1]
+			whether = str1.empty()
+			name = result.strings[2]
+			var str2:String = result.strings[3]
+			if str2.length() > 0:
+				state_mask = 0
+				if str2.find('<') >= 0:
+					state_mask |= ActionState.Press
+				if str2.find('-') >= 0:
+					state_mask |= ActionState.Hold
+				if str2.find('>') >= 0:
+					state_mask |= ActionState.Release
+			else:
+				state_mask = ActionState.Press | ActionState.Hold
 	
 	func _test(action_data: ActionData) -> bool:
 		if action_data.used:
 			return false
 		if action_data.name != name:
 			return false
-		return action_data.state & state_mask > 0 
-		# return action_data.state & state_mask == 0 
+		return (action_data.state & state_mask) > 0
 	
 	func test(frame):
 		for data in frame:
 			if _test(data):
 				return data
+	
+	func _to_string():
+		var pre = ''
+		if not whether:
+			pre = '!'
+		var post = ''
+		if state_mask & ActionState.Press > 0:
+			post += '<'
+		if state_mask & ActionState.Hold > 0:
+			post += '-'
+		if state_mask & ActionState.Release > 0:
+			post += '>'
+		return str(pre, name, post)
 
 class FrameMatcher:
 	var matchers: Array
@@ -209,13 +234,20 @@ class FrameMatcher:
 				if matcher.test(frame) != null:
 					return null
 		return result
+	
+	func _to_string():
+		var arr = PoolStringArray(matchers)
+		return arr.join('&')
 
-# down&!right:20,down&right,!down&right,action<:5
+# 236,a<:5
 # 	means: ⇩⬊⇨+A 
-func parse_command(command_str:String):
+static func parse_command(command_str:String):
 	var list = command_str.split(',')
 	var frames = []
-	var last_frame = max_cache_frame
+	var last_frame = 99
+	
+	var numRegex = RegEx.new()
+	numRegex.compile("^[1-9]+$")
 	for fragment in list:
 		var arr = fragment.split(':')
 		var command
@@ -223,11 +255,48 @@ func parse_command(command_str:String):
 			command = arr[0]
 			last_frame = int(arr[1])
 		elif arr.size() == 1:
-			command = fragment
+			if numRegex.search(fragment) == null:
+				command = fragment
+			else:
+				for i in range(0, fragment.length()):
+					var ch = fragment.substr(i, 1)
+					frames.append(FrameMatcher.new(ch, last_frame))
+				continue
 		else:
 			continue
 		frames.append(FrameMatcher.new(command, last_frame))
 	return frames
+
+static func _reverse_command(matcher: CommandMatcher, name: String) -> CommandMatcher:
+	var new_matcher = CommandMatcher.new(name)
+	new_matcher.whether = matcher.whether
+	new_matcher.state_mask = matcher.state_mask
+	return new_matcher
+
+static func reverse(queue: Array) -> Array:
+	var new_queue = []
+	for item in queue:
+		var nobj = FrameMatcher.new("", item.in_frame)
+		var matchers = []
+		for matcher in item.matchers:
+			var matcher_item = matcher
+			match matcher.name:
+				"1":
+					matcher_item = _reverse_command(matcher, "3")
+				"4":
+					matcher_item = _reverse_command(matcher, "6")
+				"7":
+					matcher_item = _reverse_command(matcher, "9")
+				"3":
+					matcher_item = _reverse_command(matcher, "1")
+				"6":
+					matcher_item = _reverse_command(matcher, "4")
+				"9":
+					matcher_item = _reverse_command(matcher, "7")
+			matchers.append(matcher_item)
+		nobj.matchers = matchers
+		new_queue.append(nobj)
+	return new_queue
 
 func command_match(queue: Array) -> MatchResult:
 	var frame_count = 0
@@ -242,8 +311,10 @@ func command_match(queue: Array) -> MatchResult:
 		if tester.in_frame < frame_count:
 			return null
 		var frame_idx = _frames.size() - frame_count - 1
-		var frame = _frames[frame_idx]
-		var ret = tester.test(frame)
+		var ret
+		if frame_idx >= 0:
+			var frame = _frames[frame_idx]
+			ret = tester.test(frame)
 		if ret != null:
 			frame_data.append(ret)
 			c_queue.pop_back()
@@ -251,3 +322,6 @@ func command_match(queue: Array) -> MatchResult:
 		if frame_count >= _frames.size() and not c_queue.empty():
 			return null
 	return null
+
+func get_direction() -> int:
+	return _controller.direction

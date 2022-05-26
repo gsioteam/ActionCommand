@@ -8,32 +8,46 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Resource",
+"class": "CommandAction",
+"language": "GDScript",
+"path": "res://addons/action_command/lib/action.gd"
+}, {
+"base": "CommandAction",
+"class": "CommandKey",
+"language": "GDScript",
+"path": "res://addons/action_command/lib/key.gd"
+}, {
+"base": "Node",
+"class": "CommandManager",
+"language": "GDScript",
+"path": "res://addons/action_command/lib/command_manager.gd"
+}, {
+"base": "Resource",
+"class": "CommandResource",
+"language": "GDScript",
+"path": "res://addons/action_command/lib/command_resource.gd"
+} ]
+_global_script_class_icons={
+"CommandAction": "res://addons/action_command/lib/action.png",
+"CommandKey": "res://addons/action_command/lib/action.png",
+"CommandManager": "",
+"CommandResource": ""
+}
+
 [application]
 
-config/name="Action Command"
-config/icon="res://icon.png"
+run/main_scene="res://addons/action_command/demo/main.tscn"
 
-[debug]
+[autoload]
 
-settings/fps/force_fps=60
+BTDebugServer="*res://addons/btree/script/bt_debug_server.gd"
 
 [editor_plugins]
 
 enabled=PoolStringArray( "res://addons/action_command/plugin.cfg" )
 
-[input]
-
-ui_select={
-"deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":32,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
-, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":0,"button_index":3,"pressure":0.0,"pressed":false,"script":null)
- ]
-}
-
-[physics]
-
-common/enable_pause_aware_picking=true
-
 [rendering]
 
-environment/default_environment="res://default_env.tres"
+quality/driver/driver_name="GLES2"

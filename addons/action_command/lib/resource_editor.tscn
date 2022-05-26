@@ -1,0 +1,146 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://addons/action_command/lib/resource_editor.gd" type="Script" id=1]
+[ext_resource path="res://addons/action_command/lib/arrow_button_editor.tscn" type="PackedScene" id=2]
+[ext_resource path="res://addons/action_command/lib/add.png" type="Texture" id=3]
+[ext_resource path="res://addons/action_command/lib/key_input_dialog.gd" type="Script" id=4]
+[ext_resource path="res://addons/action_command/lib/editor_path.gd" type="Script" id=5]
+
+[node name="resource_editor" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 1 )
+
+[node name="row" type="HBoxContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 0.057
+margin_left = 10.0
+margin_right = -6.0
+margin_bottom = -0.200001
+
+[node name="path" type="LineEdit" parent="row"]
+margin_right = 360.0
+margin_bottom = 34.0
+rect_min_size = Vector2( 360, 0 )
+text = "null"
+editable = false
+script = ExtResource( 5 )
+
+[node name="new" type="Button" parent="row"]
+margin_left = 364.0
+margin_right = 404.0
+margin_bottom = 34.0
+text = "New"
+flat = true
+
+[node name="open" type="Button" parent="row"]
+margin_left = 408.0
+margin_right = 455.0
+margin_bottom = 34.0
+text = "Open"
+flat = true
+
+[node name="save" type="Button" parent="row"]
+margin_left = 459.0
+margin_right = 500.0
+margin_bottom = 34.0
+text = "Save"
+flat = true
+
+[node name="panel" type="Panel" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 8.0
+margin_top = 48.0
+margin_right = -8.0
+margin_bottom = -10.0
+
+[node name="vbox" type="VBoxContainer" parent="panel"]
+anchor_right = 0.997
+anchor_bottom = 1.0
+margin_bottom = -2.0
+
+[node name="Label" type="Label" parent="panel/vbox"]
+margin_right = 1004.0
+margin_bottom = 14.0
+text = "Direction Buttons:"
+
+[node name="hbox" type="HBoxContainer" parent="panel/vbox"]
+margin_top = 18.0
+margin_right = 1004.0
+margin_bottom = 178.0
+
+[node name="arrow2" parent="panel/vbox/hbox" instance=ExtResource( 2 )]
+label = "2↓"
+
+[node name="arrow4" parent="panel/vbox/hbox" instance=ExtResource( 2 )]
+margin_left = 164.0
+margin_right = 324.0
+label = "4←"
+
+[node name="arrow6" parent="panel/vbox/hbox" instance=ExtResource( 2 )]
+margin_left = 328.0
+margin_right = 488.0
+label = "6→"
+
+[node name="arrow8" parent="panel/vbox/hbox" instance=ExtResource( 2 )]
+margin_left = 492.0
+margin_right = 652.0
+label = "8↑"
+
+[node name="Label2" type="Label" parent="panel/vbox"]
+margin_top = 182.0
+margin_right = 1004.0
+margin_bottom = 196.0
+text = "Other Buttons:"
+
+[node name="buttons" type="GridContainer" parent="panel/vbox"]
+margin_top = 200.0
+margin_right = 1004.0
+margin_bottom = 360.0
+columns = 6
+
+[node name="add_button" type="Button" parent="panel/vbox/buttons"]
+margin_right = 160.0
+margin_bottom = 160.0
+rect_min_size = Vector2( 160, 160 )
+icon = ExtResource( 3 )
+flat = true
+expand_icon = true
+
+[node name="save_file_dialog" type="FileDialog" parent="."]
+margin_right = 416.0
+margin_bottom = 184.0
+rect_min_size = Vector2( 400, 140 )
+filters = PoolStringArray( "*.tres", "*.res" )
+
+[node name="key_input_dialog" type="ConfirmationDialog" parent="."]
+margin_right = 400.0
+margin_bottom = 140.0
+rect_min_size = Vector2( 400, 140 )
+dialog_text = "Press Key: Null
+"
+script = ExtResource( 4 )
+
+[node name="open_file_dialog" type="FileDialog" parent="."]
+margin_right = 416.0
+margin_bottom = 184.0
+rect_min_size = Vector2( 400, 140 )
+window_title = "Open a File"
+mode = 0
+filters = PoolStringArray( "*.tres", "*.res" )
+
+[connection signal="file_drop" from="row/path" to="." method="_on_path_file_drop"]
+[connection signal="pressed" from="row/new" to="." method="_on_new_pressed"]
+[connection signal="pressed" from="row/open" to="." method="_on_open_pressed"]
+[connection signal="pressed" from="row/save" to="." method="save"]
+[connection signal="button_pressed" from="panel/vbox/hbox/arrow2" to="." method="_on2_button_pressed"]
+[connection signal="button_pressed" from="panel/vbox/hbox/arrow4" to="." method="_on4_button_pressed"]
+[connection signal="button_pressed" from="panel/vbox/hbox/arrow6" to="." method="_on6_button_pressed"]
+[connection signal="button_pressed" from="panel/vbox/hbox/arrow8" to="." method="_on8_button_pressed"]
+[connection signal="pressed" from="panel/vbox/buttons/add_button" to="." method="_on_add_button_pressed"]
+[connection signal="file_selected" from="save_file_dialog" to="." method="_on_file_dialog_file_selected"]
+[connection signal="confirmed" from="key_input_dialog" to="key_input_dialog" method="_on_key_input_dialog_confirmed"]
+[connection signal="custom_action" from="key_input_dialog" to="key_input_dialog" method="_on_key_input_dialog_custom_action"]
+[connection signal="popup_hide" from="key_input_dialog" to="key_input_dialog" method="_on_key_input_dialog_popup_hide"]
+[connection signal="file_selected" from="open_file_dialog" to="." method="_on_open_file_dialog_file_selected"]
